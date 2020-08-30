@@ -496,10 +496,22 @@ func XMLSchemaParseFromFile(path string) (uintptr, error) {
 	return uintptr(unsafe.Pointer(s)), nil
 }
 
+func XMLCreateMemoryParserCtxtBytes(buf []byte, o int) (uintptr, error) {
+	var cs *C.char
+	if len(buf) != 0 {
+		cs = (*C.char)(unsafe.Pointer(&buf[0]))
+	}
+	return xmlCleateMemoryParserCtxt(cs, len(buf), o)
+}
+
 func XMLCreateMemoryParserCtxt(s string, o int) (uintptr, error) {
 	cs := C.CString(s)
 	defer C.free(unsafe.Pointer(cs))
-	ctx := C.xmlCreateMemoryParserCtxt(cs, C.int(len(s)))
+	return xmlCleateMemoryParserCtxt(cs, len(s), o)
+}
+
+func xmlCleateMemoryParserCtxt(cs *C.char, size, o int) (uintptr, error) {
+	ctx := C.xmlCreateMemoryParserCtxt(cs, C.int(size))
 	if ctx == nil {
 		return 0, errors.New("error creating parser")
 	}
@@ -2194,17 +2206,31 @@ func XMLSchemaFree(s PtrSource) error {
 }
 
 func XMLCtxtReadMemory(ctx PtrSource, file string, baseURL string, encoding string, options int) (uintptr, error) {
-	ctxptr, err := validParserCtxtPtr(ctx)
-	if err != nil {
-		return 0, errors.Wrap(err, "not a valid pointer")
-	}
-
-	var cfile, cbaseURL, cencoding *C.char
+	var cfile *C.char
 	if file != "" {
 		cfile = C.CString(file)
 		defer C.free(unsafe.Pointer(cfile))
 	}
 
+	return xmlCtxtReadMemory(ctx, cfile, len(file), baseURL, encoding, options)
+}
+
+func XMLCtxtReadMemoryBytes(ctx PtrSource, file []byte, baseURL string, encoding string, options int) (uintptr, error) {
+	var cfile *C.char
+	if len(file) != 0 {
+		cfile = (*C.char)(unsafe.Pointer(&file[0]))
+	}
+
+	return xmlCtxtReadMemory(ctx, cfile, len(file), baseURL, encoding, options)
+}
+
+func xmlCtxtReadMemory(ctx PtrSource, cfile *C.char, size int, baseURL string, encoding string, options int) (uintptr, error) {
+	ctxptr, err := validParserCtxtPtr(ctx)
+	if err != nil {
+		return 0, errors.Wrap(err, "not a valid pointer")
+	}
+
+	var cbaseURL, cencoding *C.char
 	if baseURL != "" {
 		cbaseURL = C.CString(baseURL)
 		defer C.free(unsafe.Pointer(cbaseURL))
@@ -2215,7 +2241,7 @@ func XMLCtxtReadMemory(ctx PtrSource, file string, baseURL string, encoding stri
 		defer C.free(unsafe.Pointer(cencoding))
 	}
 
-	doc := C.xmlCtxtReadMemory(ctxptr, cfile, C.int(len(file)), cbaseURL, cencoding, C.int(options))
+	doc := C.xmlCtxtReadMemory(ctxptr, cfile, C.int(size), cbaseURL, cencoding, C.int(options))
 	if doc == nil {
 		return 0, errors.Errorf("failed to read document from memory: %v", xmlCtxtLastError(ctx))
 	}

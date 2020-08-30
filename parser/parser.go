@@ -88,28 +88,48 @@ func New(opts ...Option) *Parser {
 	}
 }
 
+var (
+	ErrFailedDoc        = errors.New("failed to generate document pointer")
+	ErrFailedCtx        = errors.New("failed to create parse context")
+	ErrFailedParseInput = errors.New("failed to create parse input")
+)
+
 // Parse parses XML from the given byte buffer
 func (p *Parser) Parse(buf []byte) (types.Document, error) {
-	return p.ParseString(string(buf))
+	ctx, err := NewCtxtBytes(buf, p.Options)
+	if err != nil {
+		return nil, errors.Wrap(err, ErrFailedCtx.Error())
+	}
+	defer ctx.Free()
+
+	docptr, err := clib.XMLCtxtReadMemoryBytes(ctx, buf, "", "", int(p.Options))
+	if err != nil {
+		return nil, errors.Wrap(err, ErrFailedParseInput.Error())
+	}
+
+	if docptr != 0 {
+		return dom.WrapDocument(docptr), nil
+	}
+	return nil, ErrFailedDoc
 }
 
 // ParseString parses XML from the given string
 func (p *Parser) ParseString(s string) (types.Document, error) {
 	ctx, err := NewCtxt(s, p.Options)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create parse context")
+		return nil, errors.Wrap(err, ErrFailedCtx.Error())
 	}
 	defer ctx.Free()
 
 	docptr, err := clib.XMLCtxtReadMemory(ctx, s, "", "", int(p.Options))
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create parse input")
+		return nil, errors.Wrap(err, ErrFailedParseInput.Error())
 	}
 
 	if docptr != 0 {
 		return dom.WrapDocument(docptr), nil
 	}
-	return nil, errors.New("failed to generate document pointer")
+	return nil, ErrFailedDoc
 }
 
 // ParseReader parses XML from the given io.Reader
@@ -123,12 +143,25 @@ func (p *Parser) ParseReader(in io.Reader) (types.Document, error) {
 }
 
 // NewCtxt creates a new Parser context
+func NewCtxtBytes(buf []byte, o Option) (*Ctxt, error) {
+	ctxptr, err := clib.XMLCreateMemoryParserCtxtBytes(buf, int(o))
+	if err != nil {
+		return nil, errNewXMLCreate(err)
+	}
+	return &Ctxt{ptr: ctxptr}, nil
+}
+
+// NewCtxt creates a new Parser context
 func NewCtxt(s string, o Option) (*Ctxt, error) {
 	ctxptr, err := clib.XMLCreateMemoryParserCtxt(s, int(o))
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to execute XMLCreateMemoryParserCtxt")
+		return nil, errNewXMLCreate(err)
 	}
 	return &Ctxt{ptr: ctxptr}, nil
+}
+
+func errNewXMLCreate(err error) error {
+	return errors.Wrap(err, "failed to execute XMLCreateMemoryParserCtxt")
 }
 
 // Pointer returns the underlying C struct
