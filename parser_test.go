@@ -54,16 +54,16 @@ var (
 		stdXMLDecl,                              // only XML Declaration
 		"<!--ouch-->",                           // comment only is like an empty document
 		`<!DOCTYPE ouch [<!ENTITY foo "bar">]>`, // no good either ...
-		"<ouch>",                // single tag (tag mismatch)
-		"<ouch/>foo",            // trailing junk
-		"foo<ouch/>",            // leading junk
-		"<ouch foo=bar/>",       // bad attribute
-		`<ouch foo="bar/>`,      // bad attribute
-		"<ouch>&</ouch>",        // bad char
-		`<ouch>&//0x20;</ouch>`, // bad chart
-		"<foob<e4>r/>",          // bad encoding
-		"<ouch>&foo;</ouch>",    // undefind entity
-		"<ouch>&gt</ouch>",      // unterminated entity
+		"<ouch>",                                // single tag (tag mismatch)
+		"<ouch/>foo",                            // trailing junk
+		"foo<ouch/>",                            // leading junk
+		"<ouch foo=bar/>",                       // bad attribute
+		`<ouch foo="bar/>`,                      // bad attribute
+		"<ouch>&</ouch>",                        // bad char
+		`<ouch>&//0x20;</ouch>`,                 // bad chart
+		"<foob<e4>r/>",                          // bad encoding
+		"<ouch>&foo;</ouch>",                    // undefind entity
+		"<ouch>&gt</ouch>",                      // unterminated entity
 		stdXMLDecl + `<!DOCTYPE foobar [<!ENTITY foo "bar">]><foobar &foo;="ouch"/>`,          // bad placed entity
 		stdXMLDecl + `<!DOCTYPE foobar [<!ENTITY foo "bar=&quot;foo&quot;">]><foobar &foo;/>`, // even worse
 		"<ouch><!---></ouch>",   // bad comment
@@ -79,12 +79,23 @@ func parseShouldSucceed(t *testing.T, opts parser.Option, inputs []string) {
 			return
 		}
 		d.Free()
+
+		d, err = Parse([]byte(s), opts)
+		if !assert.NoError(t, err, "Parse should succeed") {
+			return
+		}
+		d.Free()
 	}
 }
 
 func parseShouldFail(t *testing.T, opts parser.Option, inputs []string) {
 	for _, s := range inputs {
 		d, err := ParseString(s, opts)
+		if err == nil {
+			d.Free()
+			t.Errorf("Expected failure to parse '%s'", s)
+		}
+		d, err = Parse([]byte(s), opts)
 		if err == nil {
 			d.Free()
 			t.Errorf("Expected failure to parse '%s'", s)
@@ -201,11 +212,20 @@ func TestParseOptionStringer(t *testing.T) {
 }
 
 func TestParseEmpty(t *testing.T) {
-	doc, err := ParseString(``)
-	if err == nil {
-		t.Errorf("Parse of empty string should fail")
-		defer doc.Free()
-	}
+	t.Run("strigs", func(t *testing.T) {
+		doc, err := ParseString(``)
+		if err == nil {
+			t.Errorf("Parse of empty string should fail")
+			defer doc.Free()
+		}
+	})
+	t.Run("bytes", func(t *testing.T) {
+		doc, err := Parse(nil)
+		if err == nil {
+			t.Errorf("Parse of empty string should fail")
+			defer doc.Free()
+		}
+	})
 }
 
 func TestParse(t *testing.T) {
