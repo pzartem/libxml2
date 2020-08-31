@@ -4,7 +4,10 @@ import "errors"
 
 var (
 	// ErrMalformedXML is returned when the XML source is malformed
-	ErrMalformedXML = errors.New("malformed XML")
+	ErrMalformedXML     = errors.New("malformed XML")
+	ErrFailedDoc        = errors.New("failed to generate document pointer")
+	ErrFailedCtx        = errors.New("failed to create parse context")
+	ErrFailedParseInput = errors.New("failed to create parse input")
 )
 
 // HTMLOption represents the HTML parser options that

@@ -3,10 +3,9 @@ module github.com/pzartem/libxml2
 go 1.14
 
 require (
-	github.com/lestrrat-go/libxml2 v0.0.0-00010101000000-000000000000
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.6.1
 	gopkg.in/xmlpath.v1 v1.0.0-20140413065638-a146725ea6e7
+	launchpad.net/gocheck v0.0.0-20140225173054-000000000087 // indirect
+	launchpad.net/xmlpath v0.0.0-20130614043138-000000000004 // indirect
 )
-
-replace github.com/lestrrat-go/libxml2 => github.com/pzartem/libxml2 v0.0.0-20200828014403-a52d2c78ffc6

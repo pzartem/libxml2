@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"io"
 
-	"github.com/lestrrat-go/libxml2/dom"
-	"github.com/lestrrat-go/libxml2/types"
 	"github.com/pkg/errors"
 	"github.com/pzartem/libxml2/clib"
+	"github.com/pzartem/libxml2/dom"
+	"github.com/pzartem/libxml2/types"
 )
 
 const _OptionName = "RecoverNoEntDTDLoadDTDAttrDTDValidNoErrorNoWarningPedanticNoBlanksSAX1XIncludeNoNetNoDictNscleanNoCDATANoXIncNodeCompactOld10NoBaseFixHugeOldSAXIgnoreEncBigLines"
@@ -87,12 +87,6 @@ func New(opts ...Option) *Parser {
 		Options: o,
 	}
 }
-
-var (
-	ErrFailedDoc        = errors.New("failed to generate document pointer")
-	ErrFailedCtx        = errors.New("failed to create parse context")
-	ErrFailedParseInput = errors.New("failed to create parse input")
-)
 
 // Parse parses XML from the given byte buffer
 func (p *Parser) Parse(buf []byte) (types.Document, error) {
